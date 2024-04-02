@@ -13,6 +13,8 @@ from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithL
 
 logger = logging.getLogger(__name__)
 
+TEMPERATURE = 0.5
+
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
@@ -28,7 +30,6 @@ _output_instructions = get_json_format_instructions(
     pydantic_object=AnswerRelevanceClassification
 )
 _output_parser = RagasoutputParser(pydantic_object=AnswerRelevanceClassification)
-
 
 QUESTION_GEN = Prompt(
     name="question_generation",
@@ -154,6 +155,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
             n=self.strictness,
             callbacks=callbacks,
             is_async=is_async,
+            temperature=TEMPERATURE
         )
 
         answers = [

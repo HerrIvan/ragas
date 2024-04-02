@@ -4,6 +4,7 @@ import heapq
 import logging
 import typing as t
 import uuid
+import pickle
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
@@ -117,8 +118,12 @@ class DocumentStore(ABC):
 
     @abstractmethod
     def get_similar(
-        self, node: Node, threshold: float = 0.7, top_k: int = 3
+            self, node: Node, threshold: float = 0.7, top_k: int = 3
     ) -> t.Union[t.List[Document], t.List[Node]]:
+        ...
+
+    @abstractmethod
+    def save_to_file(self, filename: str = "docstore_backup.p") -> None:
         ...
 
     def set_run_config(self, run_config: RunConfig):
@@ -134,9 +139,9 @@ class SimilarityMode(str, Enum):
 
 
 def similarity(
-    embedding1: Embedding,
-    embedding2: Embedding,
-    mode: SimilarityMode = SimilarityMode.DEFAULT,
+        embedding1: Embedding,
+        embedding2: Embedding,
+        mode: SimilarityMode = SimilarityMode.DEFAULT,
 ) -> float:
     """Get embedding similarity."""
     if mode == SimilarityMode.EUCLIDEAN:
@@ -154,12 +159,12 @@ default_similarity_fns = similarity
 
 
 def get_top_k_embeddings(
-    query_embedding: Embedding,
-    embeddings: t.List[Embedding],
-    similarity_fn: t.Optional[t.Callable[..., float]] = None,
-    similarity_top_k: t.Optional[int] = None,
-    embedding_ids: t.Optional[t.List] = None,
-    similarity_cutoff: t.Optional[float] = None,
+        query_embedding: Embedding,
+        embeddings: t.List[Embedding],
+        similarity_fn: t.Optional[t.Callable[..., float]] = None,
+        similarity_top_k: t.Optional[int] = None,
+        embedding_ids: t.Optional[t.List] = None,
+        similarity_cutoff: t.Optional[float] = None,
 ) -> t.Tuple[t.List[float], t.List]:
     """
     Get top nodes by similarity to the query.
@@ -190,7 +195,7 @@ def get_top_k_embeddings(
 
 @dataclass
 class InMemoryDocumentStore(DocumentStore):
-    splitter: TextSplitter
+    splitter: t.Optional[TextSplitter] = None
     extractor: t.Optional[Extractor] = field(default=None, repr=False)
     embeddings: t.Optional[BaseRagasEmbeddings] = field(default=None, repr=False)
     nodes: t.List[Node] = field(default_factory=list)
@@ -334,7 +339,7 @@ class InMemoryDocumentStore(DocumentStore):
         return nodes
 
     def get_similar(
-        self, node: Node, threshold: float = 0.7, top_k: int = 3
+            self, node: Node, threshold: float = 0.7, top_k: int = 3
     ) -> t.Union[t.List[Document], t.List[Node]]:
         doc = node
         if doc.embedding is None:
@@ -356,3 +361,22 @@ class InMemoryDocumentStore(DocumentStore):
         if self.embeddings:
             self.embeddings.set_run_config(run_config)
         self.run_config = run_config
+
+    def save_to_file(self, filename: str = "docstore_backup.p"):
+        data_to_save = {
+            'node_map': self.node_map,
+            'nodes': self.nodes,
+            'node_embeddings_list': self.node_embeddings_list,
+        }
+        with open(filename, "wb") as fp:
+            pickle.dump(data_to_save, fp)
+
+    @classmethod
+    def load_from_file(cls, filename="docstore_backup.p"):
+        with open(filename, "rb") as fp:
+            data_loaded = pickle.load(fp)
+        instance = cls()
+        instance.node_map = data_loaded['node_map']
+        instance.nodes = data_loaded['nodes']
+        instance.node_embeddings_list = data_loaded['node_embeddings_list']
+        return instance
