@@ -163,8 +163,10 @@ class LangchainLLMWrapper(BaseRagasLLM):
         callbacks: Callbacks = None,
     ) -> LLMResult:
         # avoid overwritting temp parameter
-        if self.temperature is None:
+        if temperature is None:
             self.temperature = self.get_temperature(n=n)
+        else:
+            self.temperature = temperature
 
         if is_multiple_completion_supported(self.langchain_llm):
             return await self.langchain_llm.agenerate_prompt(

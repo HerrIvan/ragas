@@ -230,7 +230,7 @@ class InMemoryDocumentStore(DocumentStore):
         # get embeddings for the docs
         executor = Executor(
             desc="embedding nodes",
-            keep_progress_bar=False,
+            keep_progress_bar=True,
             raise_exceptions=True,
             run_config=self.run_config,
         )
