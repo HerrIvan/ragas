@@ -367,9 +367,35 @@ class InMemoryDocumentStore(DocumentStore):
             'node_map': self.node_map,
             'nodes': self.nodes,
             'node_embeddings_list': self.node_embeddings_list,
-        }
+            "relationships": {}}
+
+        # extract PREV and NEXT relationships to avoid cyclic structures before pickling
+        for n in self.nodes:
+            id_ = n.doc_id
+            data_to_save["relationships"][id_] = {}
+            if n.prev is not None:
+                data_to_save["relationships"][id_][Direction.PREV] = n.prev.doc_id
+            if n.next is not None:
+                data_to_save["relationships"][id_][Direction.NEXT] = n.next.doc_id
+
+            # remove cyclic references
+            n.relationships = {}
+
         with open(filename, "wb") as fp:
             pickle.dump(data_to_save, fp)
+
+        # leave structure in the original state, in case we want to further use the docstore after storing it
+        self._restore_relationships(data_to_save["relationships"])
+
+    def _restore_relationships(self, relationships: t.Dict):
+        for id_, n in self.node_map.items():
+            d = relationships[id_]
+
+            if Direction.PREV in d:
+                n.relationships[Direction.PREV] = self.node_map[d[Direction.PREV]]
+
+            if Direction.NEXT in d:
+                n.relationships[Direction.NEXT] = self.node_map[d[Direction.NEXT]]
 
     @classmethod
     def load_from_file(cls, filename="docstore_backup.p"):
@@ -379,4 +405,7 @@ class InMemoryDocumentStore(DocumentStore):
         instance.node_map = data_loaded['node_map']
         instance.nodes = data_loaded['nodes']
         instance.node_embeddings_list = data_loaded['node_embeddings_list']
+
+        instance._restore_relationships(data_loaded['relationships'])
+
         return instance
