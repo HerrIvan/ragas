@@ -208,9 +208,9 @@ class Evolution:
             )
         else:
             selected_nodes = [
-                current_nodes.nodes[i - 1]
+                current_nodes.nodes[int(i) - 1]
                 for i in relevant_context_indices
-                if i - 1 < len(current_nodes.nodes)
+                if int(i) - 1 < len(current_nodes.nodes)
             ]
             relevant_context = (
                 CurrentNodes(root_node=selected_nodes[0], nodes=selected_nodes)
@@ -291,7 +291,7 @@ class SimpleEvolution(Evolution):
         if not passed["score"]:
             current_nodes = self._get_new_random_node()
             return await self.aretry_evolve(
-                current_tries, current_nodes, update_count=False
+                current_tries, current_nodes
             )
 
         logger.debug("keyphrases in merged node: %s", merged_node.keyphrases)

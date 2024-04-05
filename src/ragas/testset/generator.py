@@ -241,6 +241,7 @@ class TestsetGenerator:
             CurrentNodes(root_node=n, nodes=[n])
             for n in self.docstore.get_random_nodes(k=test_size)
         ]
+        logger.info(f"nodes selected: {[n.root_node.doc_id for n in current_nodes]}",)
         total_evolutions = 0
         for evolution, probability in distributions.items():
             for i in range(round(probability * test_size)):
