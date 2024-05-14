@@ -182,7 +182,7 @@ class Prompt(BaseModel):
             self.language = self_cp.language
             self.examples = self_cp.examples
 
-            return self
+            return self_cp
 
         logger.info("Adapting %s to %s", self.name, language)
         prompts = []
@@ -257,7 +257,6 @@ class Prompt(BaseModel):
         self.language = language
 
         # TODO:Validate the prompt after adaptation
-        self.save(cache_dir=cache_dir)
 
         return self
 
